@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="da">
+	<head>
+		<title>Danske skoler</title>
+		<meta charset="utf-8">
+		<meta http-equiv="X-UA-Compatible" content="IE=edge">
+		<meta name="viewport" content="width=device-width, initial-scale=1">
+		<link href="//maxcdn.bootstrapcdn.com/bootstrap/3.3.1/css/bootstrap.min.css" rel="stylesheet">
+		<style>html{overflow-y:scroll}</style>
+		<!--[if lt IE 9]>
+			<script src="https://oss.maxcdn.com/html5shiv/3.7.2/html5shiv.min.js"></script>
+			<script src="https://oss.maxcdn.com/respond/1.4.2/respond.min.js"></script>
+		<![endif]-->
+	</head>
+	<body>
+		<div class="jumbotron">
+			<div class="container">
+				<h1>Skoler i Danmark</h1>
+				<p>Her kan du sortere skoler i hele Danmark ud fra uddannelse og postnummer.</p>
+			</div>
+		</div>
+		<div class="container">
+			<div class="row">
+				<ul class="pagination schooltypes"><li><a onclick="javascript:getSchoolByType(undefined, undefined);">Alle skoler</a></li></ul>
+				<ul class="pagination zipcodes"></ul>
+				<table class="table schools" style="display:none">
+					<thead>
+						<tr>
+							<th>Navn</th>
+							<th>Adresse</th>
+							<th>Telefon</th>
+							<th>E-mail</th>
+							<th>Leder</th>
+						</tr>
+					</thead>
+					<tbody></tbody>
+				</table>
+			</div>
+		</div>
+		<script src="//ajax.googleapis.com/ajax/libs/jquery/1.11.1/jquery.min.js"></script>
+		<script>
+		var schools;
+
+		jQuery(document).ready(function()
+		{
+			// Get schooltypes
+			jQuery.ajax
+			({
+				type: "GET",
+				dataType: "json",
+				url: "skoletyper.json",
+				success: function (b)
+				{
+					if(b)
+					{
+						jQuery.each(b, function(key, value)
+						{
+							jQuery(".schooltypes").append("<li><a onclick=\"javascript:getSchoolByType(" + key + ", undefined);\">" + value + "</a></li>");
+						});
+					}
+				}
+			});
+		});
+
+		function getSchoolByType(type, zipcode)
+		{
+			if(schools === undefined)
+			{
+
+				jQuery.ajax
+				({
+					type: "GET",
+					dataType: "json",
+					url: "skoler.json",
+					success: function (b)
+					{
+						if(b)
+						{
+							schools = b;
+
+							jQuery(".schools tbody").empty();
+
+							if(zipcode === undefined)
+								jQuery(".zipcodes").empty();
+
+							parseSchool(type, b, zipcode);
+							jQuery(".schools").show();
+						}
+					}
+				});
+
+			} else {
+
+				if(schools)
+				{
+					jQuery(".schools tbody").empty();
+
+					if(zipcode === undefined)
+						jQuery(".zipcodes").empty();
+
+					parseSchool(type, schools, zipcode);
+					jQuery(".schools").show();
+				}
+
+			}
+		}
+
+		function parseSchool(type, b, zipcode)
+		{
+			if(type !== undefined)
+			{
+
+				b = b[type];
+				insertSchool(type, b, zipcode);
+
+			} else {
+
+				jQuery.each(b, function(key, value)
+				{
+					insertSchool(type, value, zipcode);
+				});
+
+			}
+		}
+
+		function insertSchool(type, b, zipcode)
+		{
+			jQuery.each(b, function(key, value)
+			{
+				jQuery.each(value, function(vkey, vvalue)
+				{
+					if((zipcode !== undefined && zipcode == vvalue.postnr) || zipcode === undefined)
+					{
+						jQuery(".schools tbody").append("<tr><td>" + vvalue.inst_navn + "</td><td>" + vvalue.inst_adr + ", " + vvalue.postnr + " " + vvalue.postdistrikt + "</td><td>" + vvalue.tlf_nr.replace(/\s/g, '') + "</td><td>" + vvalue.e_mail + "</td><td>" + vvalue.inst_leder + "</td></tr>");
+
+						if(jQuery(".zipcodes .zipcode-" + key).html() === undefined)
+						{
+							jQuery(".zipcodes").append("<li class=\"zipcode-" + key + "\"><a onclick=\"javascript:getSchoolByType(" + type + ", " + key + ");\">" + key + " " + vvalue.postdistrikt + "</a></li>");
+						}
+					}
+				});
+			});
+		}
+		</script>
+	</body>
+</html>
